@@ -2,7 +2,7 @@
 
 ## 仓库信息
 
-- 建议仓库：`git@bitbucket.org:willbin/nanyinbot.git`
+- 建议仓库：`git@github.com:willbin/NanyinBot.git`
 - 分支：`main`
 - 建议提交信息：`feat: 初始化南音识谱比赛演示应用`
 
