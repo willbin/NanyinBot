@@ -78,9 +78,21 @@ final class NanyinRecognitionTests: XCTestCase {
         XCTAssertTrue(materials.contains("不是做南音百科"))
         XCTAssertTrue(materials.contains("指导老师建议对应"))
         XCTAssertTrue(materials.contains("iPad 展示路径"))
+        XCTAssertTrue(materials.contains("切到“流程”"))
         XCTAssertTrue(materials.contains("2 分钟讲解稿"))
         XCTAssertTrue(materials.contains("OCR 不是项目核心"))
         XCTAssertTrue(materials.contains("测试记录表"))
+    }
+
+    func testAlgorithmVisualizationGuideExplainsVisibleSteps() {
+        let guide = NanyinAlgorithmVisualizationGuide.text
+
+        XCTAssertTrue(guide.contains("算法流程可视化"))
+        XCTAssertTrue(guide.contains("原图"))
+        XCTAssertTrue(guide.contains("黑白化"))
+        XCTAssertTrue(guide.contains("分栏"))
+        XCTAssertTrue(guide.contains("切字打分"))
+        XCTAssertTrue(guide.contains("不是黑盒识别"))
     }
 
     func testTemplateSymbolReportExplainsLiaoPaiAndFingerMarks() {

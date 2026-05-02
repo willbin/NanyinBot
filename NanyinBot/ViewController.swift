@@ -6,6 +6,7 @@
 //
 
 import AVFoundation
+import CoreImage
 import ImageIO
 import UIKit
 import Vision
@@ -14,12 +15,14 @@ final class ViewController: UIViewController {
 
     private let playback = ScorePlaybackEngine()
     private let ocrQueue = DispatchQueue(label: "com.wecomic.NanyinBot.ocr", qos: .userInitiated)
+    private static let ciContext = CIContext()
 
     private var selectedImage: UIImage?
     private var scoreText = "1○ 2、 3- 5√ 6○ 5、 3 2 1- 0 1' 6 5 3 2 1"
     private var translationText = "点击“模板”会加载《静夜思》测试谱，并显示工ㄨ谱字到简谱的逐字翻译。"
     private var symbolText = "点击“模板”会加载《静夜思》测试谱，并显示撩拍、指骨和延续符号的用途。"
     private var algorithmText = NanyinAlgorithmGuide.text
+    private var visualizationText = NanyinAlgorithmVisualizationGuide.text
     private var materialsText = NanyinPresentationMaterials.text
     private var ocrText = ""
     private var structuredText = "点击“模板”会加载《静夜思》测试谱，并显示栏位、歌词、蓝色谱字、红色拍点和简谱草稿。"
@@ -35,7 +38,7 @@ final class ViewController: UIViewController {
     private let imageView = UIImageView()
     private let placeholderLabel = UILabel()
     private let statusLabel = UILabel()
-    private let editorMode = UISegmentedControl(items: ["简谱", "翻译", "符号", "算法", "材料", "结构", "OCR", "说明"])
+    private let editorMode = UISegmentedControl(items: ["简谱", "翻译", "符号", "算法", "流程", "材料", "结构", "OCR", "说明"])
     private let editorTextView = UITextView()
     private let tempoSlider = UISlider()
     private let tempoLabel = UILabel()
@@ -70,9 +73,10 @@ final class ViewController: UIViewController {
 
     private func configureView() {
         title = "南音识谱"
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = NanyinStyle.background
 
         scrollView.keyboardDismissMode = .interactive
+        scrollView.backgroundColor = NanyinStyle.background
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
@@ -95,13 +99,13 @@ final class ViewController: UIViewController {
         titleLabel.text = "南音识谱"
         titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
         titleLabel.adjustsFontForContentSizeCategory = true
-        titleLabel.textColor = .label
+        titleLabel.textColor = NanyinStyle.ink
 
         let subtitleLabel = UILabel()
-        subtitleLabel.text = "iPad 演示 · 工ㄨ谱 · 简谱 · 播放"
+        subtitleLabel.text = "泉州南音 · 工ㄨ谱 · 简谱 · 播放"
         subtitleLabel.font = .preferredFont(forTextStyle: .subheadline)
         subtitleLabel.adjustsFontForContentSizeCategory = true
-        subtitleLabel.textColor = .secondaryLabel
+        subtitleLabel.textColor = NanyinStyle.mutedInk
 
         let captureButton = makeActionButton(title: "拍照", image: "camera.fill", style: .filled)
         captureButton.addTarget(self, action: #selector(captureScoreImage(_:)), for: .touchUpInside)
@@ -124,10 +128,10 @@ final class ViewController: UIViewController {
         actionsStack.distribution = .fillEqually
         actionsStack.spacing = 10
 
-        previewContainer.backgroundColor = .secondarySystemBackground
+        previewContainer.backgroundColor = NanyinStyle.paper
         previewContainer.layer.cornerRadius = 8
         previewContainer.layer.borderWidth = 1
-        previewContainer.layer.borderColor = UIColor.separator.cgColor
+        previewContainer.layer.borderColor = NanyinStyle.hairline.cgColor
         previewContainer.translatesAutoresizingMaskIntoConstraints = false
 
         imageView.contentMode = .scaleAspectFit
@@ -136,7 +140,7 @@ final class ViewController: UIViewController {
 
         placeholderLabel.text = "等待谱图"
         placeholderLabel.font = .preferredFont(forTextStyle: .headline)
-        placeholderLabel.textColor = .tertiaryLabel
+        placeholderLabel.textColor = NanyinStyle.faintInk
         placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
 
         previewContainer.addSubview(imageView)
@@ -157,21 +161,30 @@ final class ViewController: UIViewController {
         statusLabel.text = "已载入示例简谱"
         statusLabel.font = .preferredFont(forTextStyle: .footnote)
         statusLabel.adjustsFontForContentSizeCategory = true
-        statusLabel.textColor = .secondaryLabel
+        statusLabel.textColor = NanyinStyle.mutedInk
         statusLabel.numberOfLines = 0
 
         editorMode.selectedSegmentIndex = 0
         editorMode.addTarget(self, action: #selector(editorModeChanged), for: .valueChanged)
-        editorMode.setTitleTextAttributes([.font: UIFont.preferredFont(forTextStyle: .footnote)], for: .normal)
+        editorMode.backgroundColor = NanyinStyle.controlBackground
+        editorMode.selectedSegmentTintColor = NanyinStyle.paper
+        editorMode.setTitleTextAttributes(
+            [.font: UIFont.preferredFont(forTextStyle: .footnote), .foregroundColor: NanyinStyle.mutedInk],
+            for: .normal
+        )
+        editorMode.setTitleTextAttributes(
+            [.font: UIFont.preferredFont(forTextStyle: .footnote), .foregroundColor: NanyinStyle.cinnabar],
+            for: .selected
+        )
 
         editorTextView.delegate = self
         editorTextView.font = .monospacedSystemFont(ofSize: 22, weight: .regular)
         editorTextView.adjustsFontForContentSizeCategory = true
-        editorTextView.backgroundColor = .secondarySystemBackground
-        editorTextView.textColor = .label
+        editorTextView.backgroundColor = NanyinStyle.paper
+        editorTextView.textColor = NanyinStyle.ink
         editorTextView.layer.cornerRadius = 8
         editorTextView.layer.borderWidth = 1
-        editorTextView.layer.borderColor = UIColor.separator.cgColor
+        editorTextView.layer.borderColor = NanyinStyle.hairline.cgColor
         editorTextView.textContainerInset = UIEdgeInsets(top: 14, left: 12, bottom: 14, right: 12)
         editorTextView.autocorrectionType = .no
         editorTextView.autocapitalizationType = .none
@@ -198,11 +211,11 @@ final class ViewController: UIViewController {
 
         tempoLabel.font = .preferredFont(forTextStyle: .subheadline)
         tempoLabel.adjustsFontForContentSizeCategory = true
-        tempoLabel.textColor = .secondaryLabel
+        tempoLabel.textColor = NanyinStyle.mutedInk
 
         metricsLabel.font = .preferredFont(forTextStyle: .footnote)
         metricsLabel.adjustsFontForContentSizeCategory = true
-        metricsLabel.textColor = .secondaryLabel
+        metricsLabel.textColor = NanyinStyle.mutedInk
         metricsLabel.numberOfLines = 0
 
         editorHeader.addArrangedSubview(editorMode)
@@ -258,14 +271,15 @@ final class ViewController: UIViewController {
         switch style {
         case .filled:
             configuration = .filled()
-            configuration.baseBackgroundColor = .systemTeal
+            configuration.baseBackgroundColor = NanyinStyle.cinnabar
             configuration.baseForegroundColor = .white
         case .tinted:
             configuration = .tinted()
-            configuration.baseForegroundColor = .systemTeal
+            configuration.baseForegroundColor = NanyinStyle.jade
+            configuration.baseBackgroundColor = NanyinStyle.jade.withAlphaComponent(0.12)
         case .plain:
             configuration = .plain()
-            configuration.baseForegroundColor = .systemTeal
+            configuration.baseForegroundColor = NanyinStyle.jade
         }
         configuration.title = title
         configuration.image = UIImage(systemName: image)
@@ -387,7 +401,7 @@ final class ViewController: UIViewController {
                         )
                     }
                     if analysis.jianpuDraft.isEmpty {
-                        self.editorMode.selectedSegmentIndex = 5
+                        self.editorMode.selectedSegmentIndex = 6
                         self.showStructureEditor()
                         self.updateStatus("已识别图片，但没有找到可转换的谱字", isError: true)
                     } else {
@@ -446,6 +460,7 @@ final class ViewController: UIViewController {
         translationText = template.translationText
         symbolText = template.symbolText
         algorithmText = template.algorithmText
+        visualizationText = NanyinAlgorithmVisualizationGuide.text
         materialsText = NanyinPresentationMaterials.text
         structuredText = template.structureText
         editorMode.selectedSegmentIndex = 3
@@ -468,10 +483,12 @@ final class ViewController: UIViewController {
         } else if editorMode.selectedSegmentIndex == 3 {
             showAlgorithmEditor()
         } else if editorMode.selectedSegmentIndex == 4 {
-            showMaterialsEditor()
+            showVisualizationEditor()
         } else if editorMode.selectedSegmentIndex == 5 {
-            showStructureEditor()
+            showMaterialsEditor()
         } else if editorMode.selectedSegmentIndex == 6 {
+            showStructureEditor()
+        } else if editorMode.selectedSegmentIndex == 7 {
             showOCREditor()
         } else {
             showGuideEditor()
@@ -527,6 +544,7 @@ final class ViewController: UIViewController {
     }
 
     private func showScoreEditor() {
+        restoreScorePreview()
         isUpdatingEditor = true
         editorTextView.text = scoreText
         editorTextView.font = .monospacedSystemFont(ofSize: 22, weight: .regular)
@@ -535,6 +553,7 @@ final class ViewController: UIViewController {
     }
 
     private func showTranslationEditor() {
+        restoreScorePreview()
         isUpdatingEditor = true
         editorTextView.text = translationText
         editorTextView.font = .monospacedSystemFont(ofSize: 15, weight: .regular)
@@ -543,6 +562,7 @@ final class ViewController: UIViewController {
     }
 
     private func showSymbolEditor() {
+        restoreScorePreview()
         isUpdatingEditor = true
         editorTextView.text = symbolText
         editorTextView.font = .monospacedSystemFont(ofSize: 15, weight: .regular)
@@ -551,6 +571,7 @@ final class ViewController: UIViewController {
     }
 
     private func showAlgorithmEditor() {
+        restoreScorePreview()
         isUpdatingEditor = true
         editorTextView.text = algorithmText
         editorTextView.font = .monospacedSystemFont(ofSize: 15, weight: .regular)
@@ -558,7 +579,20 @@ final class ViewController: UIViewController {
         isUpdatingEditor = false
     }
 
+    private func showVisualizationEditor() {
+        if let selectedImage {
+            imageView.image = makeAlgorithmVisualizationImage(from: selectedImage)
+            placeholderLabel.isHidden = true
+        }
+        isUpdatingEditor = true
+        editorTextView.text = visualizationText
+        editorTextView.font = .preferredFont(forTextStyle: .body)
+        editorTextView.isEditable = false
+        isUpdatingEditor = false
+    }
+
     private func showMaterialsEditor() {
+        restoreScorePreview()
         isUpdatingEditor = true
         editorTextView.text = materialsText
         editorTextView.font = .preferredFont(forTextStyle: .body)
@@ -567,6 +601,7 @@ final class ViewController: UIViewController {
     }
 
     private func showStructureEditor() {
+        restoreScorePreview()
         isUpdatingEditor = true
         editorTextView.text = structuredText
         editorTextView.font = .monospacedSystemFont(ofSize: 15, weight: .regular)
@@ -575,6 +610,7 @@ final class ViewController: UIViewController {
     }
 
     private func showOCREditor() {
+        restoreScorePreview()
         isUpdatingEditor = true
         editorTextView.text = ocrText
         editorTextView.font = .preferredFont(forTextStyle: .body)
@@ -583,6 +619,7 @@ final class ViewController: UIViewController {
     }
 
     private func showGuideEditor() {
+        restoreScorePreview()
         isUpdatingEditor = true
         editorTextView.text = NanyinKnowledgeGuide.text
         editorTextView.font = .preferredFont(forTextStyle: .body)
@@ -590,9 +627,250 @@ final class ViewController: UIViewController {
         isUpdatingEditor = false
     }
 
+    private func makeAlgorithmVisualizationImage(from sourceImage: UIImage) -> UIImage {
+        let canvasSize = CGSize(width: 1600, height: 820)
+        let renderer = UIGraphicsImageRenderer(size: canvasSize)
+
+        return renderer.image { context in
+            let cgContext = context.cgContext
+            NanyinStyle.background.setFill()
+            cgContext.fill(CGRect(origin: .zero, size: canvasSize))
+
+            drawText(
+                "南音工ㄨ谱识别流程",
+                in: CGRect(x: 48, y: 32, width: 900, height: 52),
+                font: .boldSystemFont(ofSize: 36),
+                color: NanyinStyle.ink
+            )
+            drawText(
+                "原图 → 黑白化 → 竖排分栏 → 单字特征打分",
+                in: CGRect(x: 48, y: 82, width: 980, height: 38),
+                font: .systemFont(ofSize: 24, weight: .medium),
+                color: NanyinStyle.mutedInk
+            )
+
+            let topY: CGFloat = 146
+            let gap: CGFloat = 28
+            let panelWidth = (canvasSize.width - 96 - gap * 3) / 4
+            let panelHeight: CGFloat = 560
+            let panels = (0..<4).map { index in
+                CGRect(
+                    x: 48 + CGFloat(index) * (panelWidth + gap),
+                    y: topY,
+                    width: panelWidth,
+                    height: panelHeight
+                )
+            }
+
+            drawAlgorithmPanel(title: "1 原图", frame: panels[0], context: cgContext) { rect in
+                drawImage(sourceImage, in: rect)
+            }
+
+            drawAlgorithmPanel(title: "2 黑白化", frame: panels[1], context: cgContext) { rect in
+                drawImage(makeMonochromeImage(from: sourceImage) ?? sourceImage, in: rect)
+                drawText(
+                    "只保留笔画形状",
+                    in: CGRect(x: rect.minX, y: rect.maxY - 34, width: rect.width, height: 28),
+                    font: .systemFont(ofSize: 18, weight: .medium),
+                    color: NanyinStyle.ink,
+                    alignment: .center
+                )
+            }
+
+            drawAlgorithmPanel(title: "3 竖排分栏", frame: panels[2], context: cgContext) { rect in
+                drawImage(sourceImage, in: rect)
+                drawColumnOverlay(in: rect, context: cgContext)
+            }
+
+            drawAlgorithmPanel(title: "4 单字打分", frame: panels[3], context: cgContext) { rect in
+                drawScoringExample(in: rect, context: cgContext)
+            }
+
+            drawText(
+                "答辩讲法：不是黑盒识别，而是把谱面分栏、把字切出、看横竖圆等特征，再用分数说明为什么识别成这个谱字。",
+                in: CGRect(x: 48, y: 730, width: canvasSize.width - 96, height: 54),
+                font: .systemFont(ofSize: 23, weight: .medium),
+                color: NanyinStyle.ink
+            )
+        }
+    }
+
+    private func drawAlgorithmPanel(
+        title: String,
+        frame: CGRect,
+        context: CGContext,
+        content: (CGRect) -> Void
+    ) {
+        context.saveGState()
+        context.setShadow(offset: CGSize(width: 0, height: 3), blur: 12, color: UIColor.black.withAlphaComponent(0.08).cgColor)
+        NanyinStyle.paper.setFill()
+        UIBezierPath(roundedRect: frame, cornerRadius: 8).fill()
+        context.restoreGState()
+
+        NanyinStyle.hairline.setStroke()
+        let borderPath = UIBezierPath(roundedRect: frame, cornerRadius: 8)
+        borderPath.lineWidth = 1
+        borderPath.stroke()
+
+        drawText(
+            title,
+            in: CGRect(x: frame.minX + 18, y: frame.minY + 18, width: frame.width - 36, height: 30),
+            font: .boldSystemFont(ofSize: 22),
+            color: NanyinStyle.cinnabar
+        )
+        content(frame.insetBy(dx: 18, dy: 60))
+    }
+
+    private func drawImage(_ image: UIImage, in rect: CGRect) {
+        let fitRect = aspectFitRect(for: image.size, in: rect)
+        image.draw(in: fitRect)
+    }
+
+    private func makeMonochromeImage(from image: UIImage) -> UIImage? {
+        guard let input = CIImage(image: image) else { return nil }
+        let output = input
+            .applyingFilter("CIPhotoEffectNoir")
+            .applyingFilter("CIColorControls", parameters: [
+                kCIInputContrastKey: 1.45,
+                kCIInputBrightnessKey: 0.05
+            ])
+
+        guard let cgImage = Self.ciContext.createCGImage(output, from: output.extent) else { return nil }
+        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+    }
+
+    private func drawColumnOverlay(in rect: CGRect, context: CGContext) {
+        let columnCount = 7
+        let gap: CGFloat = 7
+        let columnWidth = (rect.width - CGFloat(columnCount - 1) * gap) / CGFloat(columnCount)
+        for index in 0..<columnCount {
+            let x = rect.maxX - CGFloat(index + 1) * columnWidth - CGFloat(index) * gap
+            let columnRect = CGRect(x: x, y: rect.minY + 18, width: columnWidth, height: rect.height - 64)
+            let path = UIBezierPath(roundedRect: columnRect, cornerRadius: 4)
+            (index == 0 ? NanyinStyle.cinnabar : NanyinStyle.jade).withAlphaComponent(0.88).setStroke()
+            path.lineWidth = index == 0 ? 3 : 2
+            path.stroke()
+        }
+
+        drawText(
+            "读取方向：右 → 左",
+            in: CGRect(x: rect.minX, y: rect.maxY - 36, width: rect.width, height: 28),
+            font: .systemFont(ofSize: 18, weight: .medium),
+            color: NanyinStyle.ink,
+            alignment: .center
+        )
+    }
+
+    private func drawScoringExample(in rect: CGRect, context: CGContext) {
+        let characterRect = CGRect(x: rect.minX + 18, y: rect.minY + 18, width: 118, height: 150)
+        NanyinStyle.background.setFill()
+        UIBezierPath(roundedRect: characterRect, cornerRadius: 8).fill()
+        NanyinStyle.hairline.setStroke()
+        UIBezierPath(roundedRect: characterRect, cornerRadius: 8).stroke()
+
+        drawText(
+            "工",
+            in: characterRect.insetBy(dx: 10, dy: 10),
+            font: .systemFont(ofSize: 86, weight: .regular),
+            color: NanyinStyle.ink,
+            alignment: .center
+        )
+
+        let featureLines = [
+            "上横 +2",
+            "下横 +2",
+            "中竖 +2",
+            "比例 +1"
+        ]
+
+        for (index, line) in featureLines.enumerated() {
+            drawText(
+                line,
+                in: CGRect(x: rect.minX + 160, y: rect.minY + 28 + CGFloat(index) * 34, width: rect.width - 178, height: 28),
+                font: .systemFont(ofSize: 20, weight: .medium),
+                color: NanyinStyle.ink
+            )
+        }
+
+        let tableTop = rect.minY + 210
+        let rows = [
+            ("候选", "分数"),
+            ("工", "7"),
+            ("六", "3"),
+            ("一", "2")
+        ]
+
+        for (index, row) in rows.enumerated() {
+            let rowRect = CGRect(x: rect.minX + 18, y: tableTop + CGFloat(index) * 46, width: rect.width - 36, height: 44)
+            (index == 1 ? NanyinStyle.cinnabar.withAlphaComponent(0.10) : UIColor.clear).setFill()
+            UIBezierPath(roundedRect: rowRect, cornerRadius: 5).fill()
+            NanyinStyle.hairline.setStroke()
+            UIBezierPath(roundedRect: rowRect, cornerRadius: 5).stroke()
+
+            drawText(
+                row.0,
+                in: CGRect(x: rowRect.minX + 14, y: rowRect.minY + 8, width: rowRect.width / 2, height: 28),
+                font: .systemFont(ofSize: 20, weight: index == 0 ? .semibold : .regular),
+                color: index == 1 ? NanyinStyle.cinnabar : NanyinStyle.ink
+            )
+            drawText(
+                row.1,
+                in: CGRect(x: rowRect.midX, y: rowRect.minY + 8, width: rowRect.width / 2 - 14, height: 28),
+                font: .systemFont(ofSize: 20, weight: index == 1 ? .bold : .regular),
+                color: index == 1 ? NanyinStyle.cinnabar : NanyinStyle.ink,
+                alignment: .right
+            )
+        }
+
+        drawText(
+            "最高分：工 → 简谱 2",
+            in: CGRect(x: rect.minX, y: rect.maxY - 42, width: rect.width, height: 32),
+            font: .systemFont(ofSize: 20, weight: .bold),
+            color: NanyinStyle.jade,
+            alignment: .center
+        )
+    }
+
+    private func drawText(
+        _ text: String,
+        in rect: CGRect,
+        font: UIFont,
+        color: UIColor,
+        alignment: NSTextAlignment = .left
+    ) {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = alignment
+        paragraph.lineBreakMode = .byWordWrapping
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: paragraph
+        ]
+        text.draw(with: rect, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attributes, context: nil)
+    }
+
+    private func aspectFitRect(for imageSize: CGSize, in bounds: CGRect) -> CGRect {
+        guard imageSize.width > 0, imageSize.height > 0 else { return bounds }
+        let scale = min(bounds.width / imageSize.width, bounds.height / imageSize.height)
+        let width = imageSize.width * scale
+        let height = imageSize.height * scale
+        return CGRect(
+            x: bounds.midX - width / 2,
+            y: bounds.midY - height / 2,
+            width: width,
+            height: height
+        )
+    }
+
     private func updateStatus(_ text: String, isError: Bool) {
         statusLabel.text = text
-        statusLabel.textColor = isError ? .systemRed : .secondaryLabel
+        statusLabel.textColor = isError ? NanyinStyle.cinnabar : NanyinStyle.mutedInk
+    }
+
+    private func restoreScorePreview() {
+        guard let selectedImage else { return }
+        imageView.image = selectedImage
+        placeholderLabel.isHidden = true
     }
 
     private func updateTempoLabel() {
@@ -663,6 +941,18 @@ extension ViewController: UITextViewDelegate {
             updatePlaybackMetrics()
         }
     }
+}
+
+private enum NanyinStyle {
+    static let background = UIColor(red: 0.96, green: 0.94, blue: 0.88, alpha: 1.0)
+    static let paper = UIColor(red: 1.00, green: 0.985, blue: 0.94, alpha: 1.0)
+    static let controlBackground = UIColor(red: 0.90, green: 0.91, blue: 0.86, alpha: 1.0)
+    static let ink = UIColor(red: 0.13, green: 0.12, blue: 0.10, alpha: 1.0)
+    static let mutedInk = UIColor(red: 0.42, green: 0.40, blue: 0.35, alpha: 1.0)
+    static let faintInk = UIColor(red: 0.62, green: 0.59, blue: 0.52, alpha: 1.0)
+    static let cinnabar = UIColor(red: 0.70, green: 0.17, blue: 0.12, alpha: 1.0)
+    static let jade = UIColor(red: 0.05, green: 0.43, blue: 0.40, alpha: 1.0)
+    static let hairline = UIColor(red: 0.67, green: 0.55, blue: 0.39, alpha: 0.45)
 }
 
 private enum ButtonStyle {
