@@ -329,7 +329,7 @@ enum NanyinAlgorithmVisualizationGuide {
 
 enum NanyinPresentationMaterials {
     static var text: String {
-        [
+        var lines = [
             "比赛材料目录",
             "",
             "1. 项目一句话",
@@ -385,8 +385,118 @@ enum NanyinPresentationMaterials {
             "海报：一张图讲清楚工ㄨ谱到简谱。",
             "测试表：记录 5 到 10 个同学使用前后的看懂率。",
             "演示视频：30 秒展示识别、转换和播放。",
-            "算法截图：使用 App 的“流程”页展示原图、黑白化、分栏和打分。"
-        ].joined(separator: "\n")
+            "算法截图：使用 App 的“流程”页展示原图、黑白化、分栏和打分。",
+            "",
+            "9. 泉州南音网参考样例",
+            "这些样例来自泉州南音网“工ㄨ谱简谱对照”栏目，用来说明项目不是只对一张图做演示，而是有后续扩展的样本来源。"
+        ]
+        lines.append(contentsOf: NanyinReferenceSampleLibrary.compactLines)
+        return lines.joined(separator: "\n")
+    }
+}
+
+struct NanyinReferenceSample {
+    let title: String
+    let performer: String
+    let pagePath: String
+    let videoPath: String
+    let focus: String
+
+    var pageURL: String {
+        NanyinReferenceSampleLibrary.baseURL + pagePath
+    }
+
+    var videoURL: String {
+        NanyinReferenceSampleLibrary.baseURL + videoPath
+    }
+}
+
+enum NanyinReferenceSampleLibrary {
+    static let baseURL = "http://www.qznanyin.cn/"
+    static let sourcePageURL = baseURL + "stave.html"
+
+    static let samples: [NanyinReferenceSample] = [
+        NanyinReferenceSample(
+            title: "玉箫声",
+            performer: "苏诗咏",
+            pagePath: "yxsssy.html",
+            videoPath: "nanyind/sequelsongs/yxsssy/yxsssy.mp4",
+            focus: "竖排工ㄨ谱和简谱对照的基础样例"
+        ),
+        NanyinReferenceSample(
+            title: "告老爷",
+            performer: "余丽玲",
+            pagePath: "glyyll2.html",
+            videoPath: "nanyind/sequelsongs/glyyll2/glyyll2.mp4",
+            focus: "较短视频，适合快速截图做流程验证"
+        ),
+        NanyinReferenceSample(
+            title: "莲步轻移",
+            performer: "陈奎珍",
+            pagePath: "lbqyckz.html",
+            videoPath: "nanyind/sequelsongs/lbqyckz/lbqyckz.mp4",
+            focus: "可观察工尺字与演唱节奏的对应"
+        ),
+        NanyinReferenceSample(
+            title: "泥金书",
+            performer: "周成在",
+            pagePath: "njszcz.html",
+            videoPath: "nanyind/sequelsongs/njszcz/njszcz.mp4",
+            focus: "可作为不同唱者、不同曲名的泛化样例"
+        ),
+        NanyinReferenceSample(
+            title: "更深寂静",
+            performer: "陈振梅",
+            pagePath: "gsjjczm.html",
+            videoPath: "nanyind/sequelsongs/gsjjczm/gsjjczm.mp4",
+            focus: "曲名和当前《静夜思》意象接近，便于对比讲解"
+        ),
+        NanyinReferenceSample(
+            title: "月半纱窗",
+            performer: "杨双英",
+            pagePath: "ybscysy.html",
+            videoPath: "nanyind/sequelsongs/ybscysy/ybscysy.mp4",
+            focus: "可观察长句中的连续谱字识别"
+        ),
+        NanyinReferenceSample(
+            title: "小妹听说（北叠）",
+            performer: "周碧月",
+            pagePath: "xmtzby.html",
+            videoPath: "nanyind/sequelsongs/xmtzby/xmtzby.mp4",
+            focus: "标题含曲体信息，适合说明资料标注"
+        ),
+        NanyinReferenceSample(
+            title: "愁人怨",
+            performer: "郑芳卉",
+            pagePath: "cryzfh.html",
+            videoPath: "nanyind/sequelsongs/cryzfh/cryzfh.mp4",
+            focus: "用于检查不同谱面密度下的分栏"
+        ),
+        NanyinReferenceSample(
+            title: "秀才先行",
+            performer: "庄丽芬",
+            pagePath: "xcxxzlf1.html",
+            videoPath: "nanyind/sequelsongs/xcxxzlf1/xcxxzlf1.mp4",
+            focus: "用于扩展测试表中的真实样例"
+        ),
+        NanyinReferenceSample(
+            title: "劝哥哥",
+            performer: "陈丽娟",
+            pagePath: "qggclj.html",
+            videoPath: "nanyind/sequelsongs/qggclj/qggclj.mp4",
+            focus: "作为第 10 个对照样本，覆盖另一位演唱者"
+        )
+    ]
+
+    static var compactLines: [String] {
+        var lines = [
+            "来源页：\(sourcePageURL)",
+            "截图原则：只截取视频中含谱面对照的一帧，用来人工校验分栏、谱字、简谱和播放节奏，不把外站视频放进工程。",
+            "",
+            "样例｜演唱者｜用途"
+        ]
+        lines.append(contentsOf: samples.map { "\($0.title)｜\($0.performer)｜\($0.focus)" })
+        return lines
     }
 }
 

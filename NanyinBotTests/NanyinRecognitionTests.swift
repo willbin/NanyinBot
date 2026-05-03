@@ -82,6 +82,19 @@ final class NanyinRecognitionTests: XCTestCase {
         XCTAssertTrue(materials.contains("2 分钟讲解稿"))
         XCTAssertTrue(materials.contains("OCR 不是项目核心"))
         XCTAssertTrue(materials.contains("测试记录表"))
+        XCTAssertTrue(materials.contains("泉州南音网参考样例"))
+        XCTAssertTrue(materials.contains("玉箫声｜苏诗咏"))
+    }
+
+    func testReferenceSampleLibraryHasTenSourceSamples() {
+        let samples = NanyinReferenceSampleLibrary.samples
+
+        XCTAssertEqual(samples.count, 10)
+        XCTAssertEqual(NanyinReferenceSampleLibrary.sourcePageURL, "http://www.qznanyin.cn/stave.html")
+        XCTAssertTrue(samples.allSatisfy { $0.pageURL.hasPrefix(NanyinReferenceSampleLibrary.baseURL) })
+        XCTAssertTrue(samples.allSatisfy { $0.videoURL.hasSuffix(".mp4") })
+        XCTAssertTrue(samples.contains { $0.title == "告老爷" && $0.performer == "余丽玲" })
+        XCTAssertTrue(NanyinReferenceSampleLibrary.compactLines.joined(separator: "\n").contains("不把外站视频放进工程"))
     }
 
     func testAlgorithmVisualizationGuideExplainsVisibleSteps() {
