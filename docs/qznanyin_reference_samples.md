@@ -2,7 +2,9 @@
 
 来源页：[泉州南音网 - 工ㄨ谱简谱对照](http://www.qznanyin.cn/stave.html)
 
-用途：这些样例作为比赛后续扩展的“真实资料来源”，用于人工截图、对比分栏、谱字、简谱和播放节奏。当前不把外站视频或截图提交进工程，只保留来源链接和复现方法。
+用途：这些样例作为比赛后续扩展的“真实资料来源”，用于人工截图、对比分栏、谱字、简谱和播放节奏。截图、说明和来源表保存在工程内，便于 Git 管理；完整外站视频只记录来源链接，避免仓库过大和版权风险。
+
+本地资料目录：`docs/assets/qznanyin/`
 
 ## 10 个对照样例
 
@@ -34,4 +36,14 @@ curl -L -o /private/tmp/qznanyin-samples/videos/glyyll2.mp4 http://www.qznanyin.
 qlmanage -t -s 1200 -o /private/tmp/qznanyin-samples/frames /private/tmp/qznanyin-samples/videos/glyyll2.mp4
 ```
 
-说明：截图只作为本地人工对比材料，不随代码提交。
+## 已入库截图
+
+### 告老爷
+
+来源：[告老爷 - 泉州南音网](http://www.qznanyin.cn/glyyll2.html)
+
+用途：横向工尺谱与简谱对照样例，可用于解释“横向对照谱从左到右、按小节读取；蓝色工尺谱翻译结果与上方黑色简谱校验”。
+
+![告老爷工尺谱简谱对照](assets/qznanyin/glyyll2-reference.png)
+
+说明：截图只作为比赛学习与人工校验材料，保留来源链接和出处。

@@ -58,3 +58,4 @@ xcodebuild test \
 - `docs/nanyin_presentation_materials.md`：展示材料。
 - `docs/nanyin_conversion_rules.md`：横竖版式共用的转换规则。
 - `docs/qznanyin_reference_samples.md`：泉州南音网 10 个参考样例。
+- `docs/assets/qznanyin/`：参考截图和资料清单。
