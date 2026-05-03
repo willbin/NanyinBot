@@ -48,6 +48,139 @@ struct NanyinSymbolMatch {
     let knowledge: NanyinSymbolKnowledge
 }
 
+struct NanyinPitchConversionRule {
+    let symbols: [Character]
+    let displaySymbols: String
+    let jianpu: String
+    let wuyin: String
+    let solfege: String
+    let wuxing: String
+    let organ: String
+    let note: String
+}
+
+struct NanyinLayoutConversionRule {
+    let name: String
+    let readOrder: String
+    let inputLayer: String
+    let outputLayer: String
+    let appStrategy: String
+}
+
+enum NanyinConversionRuleBook {
+    static let pitchRules: [NanyinPitchConversionRule] = [
+        NanyinPitchConversionRule(
+            symbols: ["乂", "ㄨ", "义", "又", "×", "X", "尺"],
+            displaySymbols: "乂 / ㄨ",
+            jianpu: "1",
+            wuyin: "宫 (Gong)",
+            solfege: "Do",
+            wuxing: "土",
+            organ: "脾",
+            note: "基础宫音；义、又、×、X、尺先作为 OCR/字形近似兜底。"
+        ),
+        NanyinPitchConversionRule(
+            symbols: ["工"],
+            displaySymbols: "工",
+            jianpu: "2",
+            wuyin: "商 (Shang)",
+            solfege: "Re",
+            wuxing: "金",
+            organ: "肺",
+            note: "字形有上下横与中竖，适合作为可解释打分示例。"
+        ),
+        NanyinPitchConversionRule(
+            symbols: ["六"],
+            displaySymbols: "六",
+            jianpu: "3",
+            wuyin: "角 (Jiao/Jue)",
+            solfege: "Mi",
+            wuxing: "木",
+            organ: "肝",
+            note: "与工、士等相似字需要靠笔画结构区分。"
+        ),
+        NanyinPitchConversionRule(
+            symbols: ["思", "士"],
+            displaySymbols: "思 / 士",
+            jianpu: "5",
+            wuyin: "徵 (Zhi)",
+            solfege: "Sol",
+            wuxing: "火",
+            organ: "心",
+            note: "思和士先归为同一音高，后续通过样本继续校准异体写法。"
+        ),
+        NanyinPitchConversionRule(
+            symbols: ["一"],
+            displaySymbols: "一",
+            jianpu: "6",
+            wuyin: "羽 (Yu)",
+            solfege: "La",
+            wuxing: "水",
+            organ: "肾",
+            note: "横画很少，识别时要避免和延续线混淆。"
+        )
+    ]
+
+    static let layoutRules: [NanyinLayoutConversionRule] = [
+        NanyinLayoutConversionRule(
+            name: "竖排传统谱",
+            readOrder: "按竖栏读取：从右到左，栏内从上到下。",
+            inputLayer: "蓝色工ㄨ谱字、红色拍点/撩拍符号、黑色歌词。",
+            outputLayer: "按读取顺序生成带节奏标记的简谱播放稿。",
+            appStrategy: "先做版面分栏，再按列排序；适合《静夜思》这类竖排谱。"
+        ),
+        NanyinLayoutConversionRule(
+            name: "横向对照谱",
+            readOrder: "按横向小节读取：从左到右，遇到换行后继续下一行。",
+            inputLayer: "下方蓝色工尺/工ㄨ谱作为输入，上方黑色简谱作为校验答案。",
+            outputLayer: "蓝色谱字翻译出的简谱要和黑色简谱逐段对齐。",
+            appStrategy: "先按颜色分层，再用小节线和横向位置对齐；适合泉州南音网《告老爷》这类对照谱。"
+        )
+    ]
+
+    static var pitchTokenMap: [Character: String] {
+        var map: [Character: String] = [:]
+        for rule in pitchRules {
+            for symbol in rule.symbols {
+                map[symbol] = rule.jianpu
+            }
+        }
+        return map
+    }
+
+    static var ruleText: String {
+        var lines: [String] = []
+        lines.append("统一转换规则")
+        lines.append("")
+        lines.append("核心原则：先判断谱面版式，再按同一套音高表和节奏表转换。横排、竖排只影响读取顺序，不改变谱字到简谱的对应关系。")
+        lines.append("")
+        lines.append("一、版式读取规则")
+        for rule in layoutRules {
+            lines.append("\(rule.name)：\(rule.readOrder)")
+            lines.append("  输入层：\(rule.inputLayer)")
+            lines.append("  输出层：\(rule.outputLayer)")
+            lines.append("  App 做法：\(rule.appStrategy)")
+        }
+        lines.append("")
+        lines.append("二、音高转换规则")
+        for rule in pitchRules {
+            lines.append("\(rule.displaySymbols) → 简谱 \(rule.jianpu) → \(rule.wuyin) / \(rule.solfege)；五行属\(rule.wuxing)，传统脏腑对应\(rule.organ)。")
+            lines.append("  说明：\(rule.note)")
+        }
+        lines.append("")
+        lines.append("三、节奏符号规则")
+        for row in NanyinSymbolInterpreter.symbolRows {
+            lines.append("\(row.symbols)｜\(row.name)：\(row.appSupport)")
+        }
+        lines.append("")
+        lines.append("四、校验规则")
+        lines.append("1. 竖排谱用人工校对模板检查完整率，例如《静夜思》输出 60 个音符。")
+        lines.append("2. 横向对照谱用页面自带黑色简谱作为标准答案，例如《告老爷》截图可检查蓝色工尺谱翻译后是否对齐黑色简谱。")
+        lines.append("3. 如果 OCR 只读出少量字，先进入人工校对/模板兜底，不把错误结果直接播放。")
+        return lines.joined(separator: "\n")
+    }
+}
+
 enum NanyinSymbolInterpreter {
     static let symbolRows: [NanyinSymbolKnowledge] = [
         NanyinSymbolKnowledge(
@@ -212,11 +345,13 @@ enum NanyinKnowledgeGuide {
         lines.append("")
         lines.append("识别策略：")
         lines.append("1. OCR 先读取图片文字，并按颜色/位置区分黑色歌词、蓝色谱字、红色拍点。")
-        lines.append("2. 蓝色谱字按竖排版面从右到左、栏内从上到下排序。")
+        lines.append("2. 先判断版式：竖排传统谱按右到左、栏内上到下排序；横向对照谱按小节从左到右排序。")
         lines.append("3. 谱字按上面的五音表翻译为简谱数字。")
         lines.append("4. 撩拍符号会进入播放：○/〇/o 为强位，、/丶/厶/∠ 为弱位；延续线会拉长前一个音。")
         lines.append("5. 指骨符号会保留在播放文本中；无撩拍标记时先按短促动作估算，完整指骨时值表后续继续校准。")
         lines.append("6. 如果《静夜思》测试图的 OCR 只读到很少谱字，会切换到内置校对模板，保证演示的完整率和播放稳定性。")
+        lines.append("")
+        lines.append(NanyinConversionRuleBook.ruleText)
         lines.append("")
         lines.append("当前边界：")
         lines.append("这个版本覆盖基础音高、撩拍强弱、延续时值和指骨提示。更完整的南音工ㄨ谱还需要继续解析指骨时值表、管门和八度偏旁。")
@@ -391,6 +526,10 @@ enum NanyinPresentationMaterials {
             "这些样例来自泉州南音网“工ㄨ谱简谱对照”栏目，用来说明项目不是只对一张图做演示，而是有后续扩展的样本来源。"
         ]
         lines.append(contentsOf: NanyinReferenceSampleLibrary.compactLines)
+        lines.append("")
+        lines.append("10. 横竖谱面统一规则")
+        lines.append("竖排传统谱从右到左、栏内从上到下读取；横向对照谱从左到右、按小节和换行继续读取。")
+        lines.append("读取顺序不同，但转换规则相同：谱字按五音表转简谱，拍/撩/延续/指骨按节奏表进入播放。")
         return lines.joined(separator: "\n")
     }
 }
@@ -586,20 +725,7 @@ enum JianpuParser {
         7: 11
     ]
 
-    private static let nanyinTokenMap: [Character: String] = [
-        "乂": "1",
-        "ㄨ": "1",
-        "义": "1",
-        "又": "1",
-        "×": "1",
-        "X": "1",
-        "尺": "1",
-        "工": "2",
-        "六": "3",
-        "士": "5",
-        "思": "5",
-        "一": "6"
-    ]
+    private static let nanyinTokenMap = NanyinConversionRuleBook.pitchTokenMap
 
     static func isNanyinNotationCharacter(_ character: Character) -> Bool {
         nanyinTokenMap[character] != nil

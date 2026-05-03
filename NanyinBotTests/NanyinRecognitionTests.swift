@@ -84,6 +84,20 @@ final class NanyinRecognitionTests: XCTestCase {
         XCTAssertTrue(materials.contains("测试记录表"))
         XCTAssertTrue(materials.contains("泉州南音网参考样例"))
         XCTAssertTrue(materials.contains("玉箫声｜苏诗咏"))
+        XCTAssertTrue(materials.contains("横竖谱面统一规则"))
+    }
+
+    func testConversionRuleBookDefinesPitchRhythmAndLayouts() {
+        let ruleText = NanyinConversionRuleBook.ruleText
+
+        XCTAssertEqual(NanyinConversionRuleBook.pitchRules.count, 5)
+        XCTAssertEqual(NanyinConversionRuleBook.layoutRules.count, 2)
+        XCTAssertEqual(JianpuParser.jianpuToken(for: "工"), "2")
+        XCTAssertEqual(JianpuParser.jianpuToken(for: "尺"), "1")
+        XCTAssertTrue(ruleText.contains("竖排传统谱"))
+        XCTAssertTrue(ruleText.contains("横向对照谱"))
+        XCTAssertTrue(ruleText.contains("横排、竖排只影响读取顺序"))
+        XCTAssertTrue(ruleText.contains("《告老爷》截图可检查蓝色工尺谱"))
     }
 
     func testReferenceSampleLibraryHasTenSourceSamples() {

@@ -56,4 +56,5 @@ xcodebuild test \
 - `NanyinBotTests/`：单元测试。
 - `docs/nanyin_competition_plan.md`：比赛计划。
 - `docs/nanyin_presentation_materials.md`：展示材料。
+- `docs/nanyin_conversion_rules.md`：横竖版式共用的转换规则。
 - `docs/qznanyin_reference_samples.md`：泉州南音网 10 个参考样例。
